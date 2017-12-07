@@ -30,6 +30,7 @@ import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.ClipData;
 import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -49,6 +50,7 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -66,18 +68,42 @@ public class TagViewer extends Activity {
     private PendingIntent mPendingIntent;
     private NdefMessage mNdefPushMessage;
 
+    private Button allowButton;
+    private Button blockButton;
+
     private AlertDialog mDialog;
+
+    Long NUID;
 
     private List<Tag> mTags = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        SharedPreferences settings = getApplicationContext().getSharedPreferences(PREFS_NAME, 0);
+        final SharedPreferences.Editor editor = settings.edit();
         setContentView(R.layout.tag_viewer);
         mTagContent = (LinearLayout) findViewById(R.id.list);
         resolveIntent(getIntent());
-
+        allowButton=(Button)findViewById(R.id.allow);
+        blockButton=(Button)findViewById(R.id.block);
         mDialog = new AlertDialog.Builder(this).setNeutralButton("Ok", null).create();
+
+        allowButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                editor.putString( String.valueOf(NUID), "allow");
+                editor.apply();
+            }
+        });
+
+        blockButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                editor.putString( String.valueOf(NUID), "block");
+                editor.apply();
+            }
+        });
 
         mAdapter = NfcAdapter.getDefaultAdapter(this);
         if (mAdapter == null) {
@@ -185,18 +211,33 @@ public class TagViewer extends Activity {
     private String dumpTagData(Tag tag) {
         StringBuilder sb = new StringBuilder();
         SharedPreferences settings = getApplicationContext().getSharedPreferences(PREFS_NAME, 0);
-        SharedPreferences.Editor editor = settings.edit();
+
+        allowButton.setVisibility(View.VISIBLE);
+        blockButton.setVisibility(View.VISIBLE);
         byte[] id = tag.getId();
+        NUID = toDec(id);
         sb.append("ID (hex): ").append(toHex(id)).append('\n');
         sb.append("ID (reversed hex): ").append(toReversedHex(id)).append('\n');
         sb.append("ID (dec): ").append(toDec(id)).append('\n');
         sb.append("ID (reversed dec): ").append(toReversedDec(id)).append('\n');
         // Get permissions from storage
-        long permissions = settings.getLong("allow", 0);
-        sb.append("Permissions: ").append(permissions).append('\n');
+        String permissions = settings.getString(String.valueOf(NUID), "");
+        if( permissions.equals("allow")) {
+            Context context = getApplicationContext();
+            CharSequence text = "Welcome back to our secret club";
+            int duration = Toast.LENGTH_SHORT;
+
+            Toast toast = Toast.makeText(context, text, duration);
+            toast.show();
+        } else if(permissions.equals("block")) {
+            Context context = getApplicationContext();
+            CharSequence text = "ACCESS DENIED!";
+            int duration = Toast.LENGTH_SHORT;
+
+            Toast toast = Toast.makeText(context, text, duration);
+            toast.show();
+        }
         // Add permissions to storage
-        editor.putLong("allow", toDec(id));
-        editor.apply();
         String prefix = "android.nfc.tech.";
         sb.append("Technologies: ");
         for (String tech : tag.getTechList()) {
@@ -437,87 +478,12 @@ public class TagViewer extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
 
         if (mTags.size() == 0) {
-            Toast.makeText(this, R.string.nothing_scanned, Toast.LENGTH_LONG).show();
+            //Toast.makeText(this, R.string.nothing_scanned, Toast.LENGTH_LONG).show();
             return true;
         }
-
-        switch (item.getItemId()) {
-        case R.id.menu_main_clear:
-            clearTags();
-            return true;
-        case R.id.menu_copy_hex:
-            copyIds(getIdsHex());
-            return true;
-        case R.id.menu_copy_reversed_hex:
-            copyIds(getIdsReversedHex());
-            return true;
-        case R.id.menu_copy_dec:
-            copyIds(getIdsDec());
-            return true;
-        case R.id.menu_copy_reversed_dec:
-            copyIds(getIdsReversedDec());
-            return true;
-        default:
-            return super.onOptionsItemSelected(item);
-        }
+        return false;
     }
 
-    private void clearTags() {
-        mTags.clear();
-        for (int i = mTagContent.getChildCount() -1; i >= 0 ; i--) {
-            View view = mTagContent.getChildAt(i);
-            if (view.getId() != R.id.tag_viewer_text) {
-                mTagContent.removeViewAt(i);
-            }
-        }
-    }
-
-    private void copyIds(String text) {
-        ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-        ClipData clipData = ClipData.newPlainText("NFC IDs", text);
-        clipboard.setPrimaryClip(clipData);
-        Toast.makeText(this, mTags.size() + " IDs copied", Toast.LENGTH_SHORT).show();
-    }
-
-    private String getIdsHex() {
-        StringBuilder builder = new StringBuilder();
-        for (Tag tag : mTags) {
-            builder.append(toHex(tag.getId()));
-            builder.append('\n');
-        }
-        builder.setLength(builder.length() - 1); // Remove last new line
-        return builder.toString().replace(" ", "");
-    }
-
-    private String getIdsReversedHex() {
-        StringBuilder builder = new StringBuilder();
-        for (Tag tag : mTags) {
-            builder.append(toReversedHex(tag.getId()));
-            builder.append('\n');
-        }
-        builder.setLength(builder.length() - 1); // Remove last new line
-        return builder.toString().replace(" ", "");
-    }
-
-    private String getIdsDec() {
-        StringBuilder builder = new StringBuilder();
-        for (Tag tag : mTags) {
-            builder.append(toDec(tag.getId()));
-            builder.append('\n');
-        }
-        builder.setLength(builder.length() - 1); // Remove last new line
-        return builder.toString();
-    }
-
-    private String getIdsReversedDec() {
-        StringBuilder builder = new StringBuilder();
-        for (Tag tag : mTags) {
-            builder.append(toReversedDec(tag.getId()));
-            builder.append('\n');
-        }
-        builder.setLength(builder.length() - 1); // Remove last new line
-        return builder.toString();
-    }
 
     @Override
     public void onNewIntent(Intent intent) {

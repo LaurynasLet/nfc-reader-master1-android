@@ -12,15 +12,10 @@ public final class R {
     public static final int icon=0x7f010000;
   }
   public static final class id {
-    public static final int list=0x7f020000;
-    public static final int menu_copy_dec=0x7f020001;
-    public static final int menu_copy_hex=0x7f020002;
-    public static final int menu_copy_reversed_dec=0x7f020003;
-    public static final int menu_copy_reversed_hex=0x7f020004;
-    public static final int menu_main_clear=0x7f020005;
-    public static final int menu_main_copy=0x7f020006;
-    public static final int tag_viewer_text=0x7f020007;
-    public static final int text=0x7f020008;
+    public static final int allow=0x7f020000;
+    public static final int block=0x7f020001;
+    public static final int list=0x7f020002;
+    public static final int text=0x7f020003;
   }
   public static final class layout {
     public static final int tag_divider=0x7f030000;

@@ -1,4 +1,4 @@
-#Tue Dec 05 22:35:18 EET 2017
-base.0=C\:\\Users\\laury\\StudioProjects\\nfc-reader-master1\\app\\build\\intermediates\\transforms\\dexMerger\\debug\\24
+#Wed Dec 06 23:19:49 EET 2017
+base.0=C\:\\Users\\laury\\StudioProjects\\nfc-reader-master1\\app\\build\\intermediates\\transforms\\dexMerger\\debug\\176
 path.0=classes.dex
 renamed.0=classes.dex
